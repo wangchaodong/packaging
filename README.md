@@ -11,7 +11,7 @@ iOS自动打包脚本
 
 ``` shell
 cd packaging
-python3 packaging.py -s <scheme> -m <message> -ab <addBuildNumber> -pgy <pgy> -as <appstore>
+packaging.py -h <help> -s <scheme> -m <message> -ab <addBuildNumber> -pgy <pgy> -as <appstore> -dm <distributionMethod>
 ```
 
 ## 配置
