@@ -1,0 +1,31 @@
+{
+    "project_name": "",
+    "project_scheme_list": [
+    ],
+    "project_scheme_index": 0,
+    "apple_account_team_id": "",
+    "development_provisioning_profiles": {
+        "bundleID": "mobileProvision"
+    },
+    "distribution_provisioning_profiles": {
+		"bundleID": "mobileProvision"
+    },
+    "distribution_method": "development",
+    "upload_pgy_enable": true,
+    "pgy_api_key": "",
+    "upload_app_sotre_enable": true,
+    "upload_app_store_account_type": 1,
+    "apple_account_user": "account",
+    "apple_account_password": "password",
+    "apple_account_apiKey": "",
+    "apple_account_apiIssuer": "",
+    "send_email_enable": true,
+    "email_host": "smtp.qq.com",
+    "email_sender_user": "xxx@qq.com",
+    "email_sender_psw": "",
+    "email_receivers": [
+        "xx@qq.com,xxx@qq.com,xxxx@qq.com"
+    ],
+    "add_build_number_enable": true,
+    "log_enable": true
+}

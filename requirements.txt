@@ -1,0 +1,2 @@
+pbxproj==3.2.3
+requests==2.25.1
