@@ -10,6 +10,7 @@ import json
 import configs as constant_configs
 from configs import Config as packaging_config
 import tools
+import platform
 
 
 def clean():
@@ -43,12 +44,12 @@ def archive():
 
     start = time.time()
     if packaging_config.is_workspace_project:
-        archive_command = 'xcodebuild -workspace %s -scheme %s -allowProvisioningUpdates -archivePath %s/%s.xcarchive archive' % (
+        archive_command = 'xcodebuild -workspace %s -scheme %s -archivePath %s/%s.xcarchive archive' % (
             constant_configs.get_xcode_workspace_path(), constant_configs.get_product_scheme(), constant_configs.build_directory, constant_configs.get_product_scheme())
     else:
-        archive_command = 'xcodebuild -project %s -scheme %s -allowProvisioningUpdates -archivePath %s/%s.xcarchive archive' % (
+        archive_command = 'xcodebuild -project %s -scheme %s -archivePath %s/%s.xcarchive archive' % (
             constant_configs.get_xcode_project_path(), constant_configs.get_product_scheme(), constant_configs.build_directory, constant_configs.get_product_scheme())
-        
+
     archive_command_run = subprocess.Popen(archive_command, shell=True)
     archive_command_run.wait()
     end = time.time()
@@ -70,7 +71,7 @@ def export_ipa(plistPath, export_path):
 
     start = time.time()
 
-    export_command = 'xcodebuild -exportArchive -allowProvisioningUpdates -archivePath %s/%s.xcarchive -exportPath %s -exportOptionsPlist %s' % (
+    export_command = 'xcodebuild -exportArchive -archivePath %s/%s.xcarchive -exportPath %s -exportOptionsPlist %s' % (
         constant_configs.build_directory, constant_configs.get_product_scheme(), export_path, plistPath)
     export_command_run = subprocess.Popen(export_command, shell=True)
     export_command_run.wait()
@@ -102,7 +103,7 @@ def upload_to_pgy(ipaPath, update_message):
             info.get('data').get('buildShortcutUrl')
         # 打开浏览器
         tools.open_browser(app_pgy_download_url)
-        
+
         end = time.time()
         tools.success_print("上传蒲公英成功, 用时:%.2f秒" % (end - start))
         return (True, app_pgy_download_url, qr_code_img_path)
@@ -150,13 +151,13 @@ def upload_ipa_to_app_store(ipa_path):
     tools.notice_print("------ 开始上传到AppStore ------")
     start = time.time()
     constant_configs.prepare_app_store_upload()
-    
+
     if packaging_config.upload_app_store_account_type == 1:
-        upload_appstore_commond = 'xcrun altool --upload-app -f %s -t ios -u %s -p %s --output-format json --show-progress --verbose' % (
+        upload_appstore_commond = 'xcrun altool --upload-app --file %s --type ios -u %s -p %s --output-format json --show-progress --verbose' % (
             ipa_path, packaging_config.apple_account_user, packaging_config.apple_account_password)
 
-    elif packaging_config.upload_app_store_account_type == 2:        
-        upload_appstore_commond = 'xcrun altool --upload-app -t ios -f %s --apiKey %s --apiIssuer %s --output-format json --show-progress --verbose' % (
+    elif packaging_config.upload_app_store_account_type == 2:
+        upload_appstore_commond = 'xcrun altool --upload-app --file %s --type ios --apiKey %s --apiIssuer %s --output-format json --show-progress --verbose' % (
             ipa_path, packaging_config.apple_account_apiKey, packaging_config.apple_account_apiIssuer)
 
     upload_appstore_commond_run = subprocess.Popen(
@@ -178,10 +179,10 @@ def upload_ipa_to_app_store(ipa_path):
         tools.end_program(1)
     else:
         tools.success_print("上传App Store Connect成功, 用时:%.2f秒" %
-                        (end - start))
+                            (end - start))
         tools.open_browser(constant_configs.testflights_url)
-        
-        
+
+
 def export():
     print('')
     tools.notice_print('------ prepare export %s ipa, scheme: %s  ------' %
@@ -189,39 +190,28 @@ def export():
 
     plistPath = constant_configs.create_export_options_plist_file()
     export_path = constant_configs.get_export_path()
-    
+
     export_ipa(plistPath=plistPath, export_path=export_path)
     ipa_path = constant_configs.get_exported_ipa_path()
     return ipa_path
-    
-    
+
+
 def start_packaging():
     constant_configs.prepare_packaging_dir()
-    
-    if packaging_config.add_build_number_enable: 
-        tools.add_build_number(project_pbxproj_path=constant_configs.get_xcode_project_pbxproj_path(), 
+
+    if packaging_config.add_build_number_enable:
+        tools.add_build_number(project_pbxproj_path=constant_configs.get_xcode_project_pbxproj_path(),
                                target_name=constant_configs.get_target_name(),
                                project_pbxproj_dir=constant_configs.get_xcode_project_path())
-        
+
     clean()
     archive()
 
     ipa_path = export()
     # pgy
     if packaging_config.upload_pgy_enable:
-        pgy_result = upload_to_pgy(ipaPath=ipa_path, update_message=packaging_config.app_update_message)
-        
-        if pgy_result[0]:
-            if packaging_config.send_email_enable:
-                tools.send_email(email_host=packaging_config.email_host,
-                                email_sender=packaging_config.email_sender_user,
-                                email_psw=packaging_config.email_sender_psw,
-                                email_receivers=packaging_config.email_receivers, 
-                                app_name=constant_configs.get_product_scheme(),
-                                ipa_path=ipa_path,
-                                download_url=pgy_result[1], 
-                                update_message=packaging_config.app_update_message, 
-                                qr_code_img_path=pgy_result[2])
+        upload_to_pgy(ipaPath=ipa_path,
+                      update_message=packaging_config.app_update_message)
 
     # app store connect
     if packaging_config.upload_app_sotre_enable:
@@ -235,19 +225,21 @@ def start_packaging():
         validate_ipa(ipa_path=ipa_path)
         if not constant_configs.python_script_debug_enable:
             upload_ipa_to_app_store(ipa_path=ipa_path)
-        
+
     version = tools.get_exported_ipa_info(ipa_path)
-    
+
     if packaging_config.add_build_number_enable:
         tools.commit_add_build_change_to_git(
-            project_pbxproj_path=constant_configs.get_xcode_project_pbxproj_path(), ipa_builded_num=version[1])
+            project_pbxproj_path=constant_configs.get_xcode_project_pbxproj_path(), ipa_builded_num=version[1],
+            github_repo_url=packaging_config.github_repo_url,
+            github_access_token=packaging_config.github_access_token)
 
     return ipa_path
 
-            
+
 def prepare():
     constant_configs.prepare_config()
-    
+
     version = tools.get_xcode_project_info(
         project_pbxproj_path=constant_configs.get_xcode_project_pbxproj_path(), target_name=constant_configs.get_target_name())
     tools.notice_print("""
@@ -260,7 +252,7 @@ version: %s (%s)
     """ % (constant_configs.get_xcode_workspace_path(), constant_configs.get_xcode_project_path(), version[0], version[1]))
     try:
         opts, args = getopt.getopt(sys.argv[1:], '-h:-s:-m:-ab:-pgy:-as:-dm:', [
-                                   'help', 'scheme=', 'message=', 'addBuildNumber=', 'pgy=', 'appstore=','distributionMethod='])
+                                   'help', 'scheme=', 'message=', 'addBuildNumber=', 'pgy=', 'appstore=', 'distributionMethod='])
     except getopt.GetoptError:
         tools.fail_print("参数错误")
         print('''
@@ -285,6 +277,7 @@ packaging.py -h <help> -s <scheme> -m <message> -ab <addBuildNumber> -pgy <pgy> 
         if opt_name in ('-h', '--help'):
             print('''
 packaging.py -h <help> -s <scheme> -m <message> -ab <addBuildNumber> -pgy <pgy> -as <appstore> -dm <distributionMethod>
+
 -h      help
 -s      scheme: xcode project schemes
 -m      message: app update message.
@@ -301,7 +294,7 @@ packaging.py -h <help> -s <scheme> -m <message> -ab <addBuildNumber> -pgy <pgy> 
             for index, value in enumerate(packaging_config.project_scheme_list):
                 if value == scheme:
                     packaging_config.project_scheme_index = index
-                    
+
         if opt_name in ('-m', '--message'):
             message = opt_value
             print(message)
@@ -335,14 +328,15 @@ packaging.py -h <help> -s <scheme> -m <message> -ab <addBuildNumber> -pgy <pgy> 
         scheme = ''
         for index, value in enumerate(packaging_config.project_scheme_list):
             scheme += ' '+str(index+1)+'.'+value+'\n'
-       
+
         scheme = input(tools.color_text(
             "*请选择要打包的scheme:\n%s" % (scheme), tools.PrintColors.HEADER))
         if scheme == '':
             tools.notice_print(
                 '输入回车则表示使用config.json中project_scheme_index: %s' % packaging_config.project_scheme_index)
         elif not scheme.isdigit():
-            tools.fail_print("Invalid input, please select the index of scheme")
+            tools.fail_print(
+                "Invalid input, please select the index of scheme")
             tools.end_program(2)
         else:
             scheme = int(scheme)
@@ -350,9 +344,9 @@ packaging.py -h <help> -s <scheme> -m <message> -ab <addBuildNumber> -pgy <pgy> 
                 tools.fail_print(
                     "Invalid input, please select the index of scheme")
                 tools.end_program(2)
-        
+
             packaging_config.project_scheme_index = scheme-1
-        
+
     # 命令行未添加message参数
     if not message.strip():
         # 更新内容
@@ -365,7 +359,7 @@ packaging.py -h <help> -s <scheme> -m <message> -ab <addBuildNumber> -pgy <pgy> 
 
         if not message.strip():
             message = packaging_config.project_name + ' update'
-            
+
         packaging_config.app_update_message = message
 
     # 命令行未添加pgy参数
@@ -389,7 +383,7 @@ packaging.py -h <help> -s <scheme> -m <message> -ab <addBuildNumber> -pgy <pgy> 
         else:
             appstore = tools.to_bool(appstore)
             packaging_config.upload_app_sotre_enable = appstore
-        
+
     # 命令行未添加addBuildNumber参数
     if not add_build_number.strip():
         add_build_number = input(tools.color_text(
@@ -397,25 +391,78 @@ packaging.py -h <help> -s <scheme> -m <message> -ab <addBuildNumber> -pgy <pgy> 
         if add_build_number == '':
             tools.notice_print(
                 '输入回车则表示使用config.json中add_build_number_enable: %s' % packaging_config.add_build_number_enable)
+            packaging_config.distribution_method = constant_configs.DistributionMethodType(
+                distribution_method)
         else:
             packaging_config.add_build_number_enable = tools.to_bool(
-            add_build_number)
+                add_build_number)
 
-    if len(distribution_method) == 0:
-        if packaging_config.upload_pgy_enable:
-            packaging_config.distribution_method = constant_configs.DistributionMethodType.Development
-        elif packaging_config.upload_app_sotre_enable:
-            packaging_config.distribution_method = constant_configs.DistributionMethodType.AppStoreConnect
-        
+    # 命令行未添加 distribution_method 参数
+    if not distribution_method.strip():
+        distribution_method = input(tools.color_text(
+            """
+*选择IPA distribution_method:
+1. development
+2. app-store
+3. ad-hoc
+""",
+            tools.PrintColors.HEADER))
+        if distribution_method == '':
+            tools.notice_print(
+                '输入回车则表示使用config.json中add_build_number_enable: %s' % packaging_config.distribution_method)
+        else:
+            if distribution_method == '1':
+                distribution_method = constant_configs.DistributionMethodType.Development
+            elif distribution_method == '2':
+                distribution_method = constant_configs.DistributionMethodType.AppStoreConnect
+            elif distribution_method == '3':
+                distribution_method = constant_configs.DistributionMethodType.AdHoc
+            else:
+                distribution_method = constant_configs.DistributionMethodType.Development
+
+            packaging_config.distribution_method = distribution_method
+
+
 if __name__ == '__main__':
-    
+
     start_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
     prepare()
     ipa_path = start_packaging()
+
+    # ipa_path = constant_configs.get_exported_ipa_path()
+
     if constant_configs.python_script_debug_enable:
         constant_configs.save_packaging_config()
-        
-    end_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-    constant_configs.save_packaging_log(start_time=start_time,end_time=end_time)
-    tools.end_program(0)
 
+    end_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    log = constant_configs.save_packaging_log(
+        start_time=start_time, end_time=end_time)
+
+    if packaging_config.send_email_enable:
+        version = tools.get_exported_ipa_info(ipa_path)
+        email_subject = '%s iOS 更新 版本:%s (%s)' % (
+            constant_configs.get_product_scheme(), version[0], version[1])
+        email_content = """
+        <head>
+        %s iOS 更新 版本:%s (%s)
+        </head>
+        <p>
+        更新信息: %s <br>
+        
+        platform: %s <br>
+        system user: %s <br>
+        </p>
+        """ % (constant_configs.get_product_scheme(), version[0], version[1], packaging_config.app_update_message, platform.platform(), platform.node())
+        email_attachments = {
+            "log.txt": log,
+        }
+        tools.send_email(email_host=packaging_config.email_host,
+                         email_port=packaging_config.email_port,
+                         email_sender=packaging_config.email_sender_user,
+                         email_psw=packaging_config.email_sender_psw,
+                         email_receivers=packaging_config.email_receivers,
+                         email_subject=email_subject,
+                         email_content=email_content,
+                         email_attachments=email_attachments)
+
+    tools.end_program(0)

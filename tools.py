@@ -14,6 +14,7 @@ import re
 import smtplib
 from pbxproj import XcodeProject
 
+
 class PrintColors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -24,6 +25,7 @@ class PrintColors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
     ENDC = '\033[0m'
+
 
 def success_print(text):
     print(color_text(text=text, color=PrintColors.OKGREEN))
@@ -57,12 +59,12 @@ def open_browser(url):
     webbrowser.open(url, new=1, autoraise=True)
 
 
-def send_email(email_host, email_sender, email_psw, email_receivers, app_name, ipa_path, download_url, update_message, qr_code_img_path):
+def send_email(email_host, email_port, email_sender, email_psw, email_receivers, email_subject, email_content, email_attachments):
     print("")
     notice_print("------ 发送邮件 ------")
 
     mail_host = email_host
-    #163用户名
+    #用户名
     mail_user = email_sender
     #密码(部分邮箱为授权码)
     mail_pass = email_psw
@@ -71,44 +73,29 @@ def send_email(email_host, email_sender, email_psw, email_receivers, app_name, i
     #邮件接受方邮箱地址，注意需要[]包裹，这意味着你可以写多个邮件地址群发
     receivers = email_receivers
 
-    #设置email信息
-    version = get_exported_ipa_info(ipa_path)
-
-    content = """
-    <head>
-    %s iOS 更新 版本:%s (%s)
-    </head>
-    <p>
-    下载链接: %s <br>
-    更新信息: %s <br>
-    二维码: <br>
-    <img src="cid:imageQRCode">
-
-    </p>
-    """ % (app_name, version[0], version[1], download_url, update_message)
-
     message = MIMEMultipart('related')  # 邮件类型，如果要加图片等附件，就得是这个
     #邮件主题
-    message['Subject'] = '%s iOS 更新 版本:%s (%s)' % (
-        app_name, version[0], version[1])
+    message['Subject'] = email_subject
     #发送方信息
     message['From'] = sender
     #接受方信息
     message['To'] = ", ".join(receivers)
     #邮件内容设置
-    txt_msg = MIMEText(content, 'html', 'utf-8')
+    txt_msg = MIMEText(email_content, 'html', 'utf-8')
     message.attach(txt_msg)
-    #二维码
-    with open(qr_code_img_path, 'rb') as f:
-        pic = MIMEImage(f.read())
-        pic.add_header('Content-ID', '<imageQRCode>')
-        message.attach(pic)
+    if email_attachments is not None:
+        for attachment_file_name, attachment in email_attachments.items():
+            #构造附件
+            att = MIMEText(attachment, 'base64', 'utf-8')
+            #附件设置内容类型，方便起见，设置为二进制流
+            att["Content-Type"] = 'application/octet-stream'
+            #设置附件头，添加文件名
+            att["Content-Disposition"] = 'attachment; filename="%s"' % attachment_file_name
+            message.attach(att)
+
     #登录并发送邮件
     try:
-        # smtpObj = smtplib.SMTP()
-        # #连接到服务器
-        # smtpObj.connect(mail_host,25)
-        smtpObj = smtplib.SMTP_SSL(mail_host, 465)
+        smtpObj = smtplib.SMTP_SSL(mail_host, email_port)
         #登录到服务器
         smtpObj.login(mail_user, mail_pass)
         #发送
@@ -135,6 +122,7 @@ def get_exported_ipa_info(ipa_path):
     short_version = plist_root['CFBundleShortVersionString']
     build_version = plist_root['CFBundleVersion']
     return (short_version, build_version)
+
 
 def find_ipa_plist_path(zip_file):
     name_list = zip_file.namelist()
@@ -183,7 +171,7 @@ def add_xcode_project_version(project_pbxproj_path, target_name, marketing_versi
                 build_settings = build_configuration_object["buildSettings"]
                 build_settings["MARKETING_VERSION"] = marketing_version
                 build_settings["CURRENT_PROJECT_VERSION"] = current_project_version
-                
+
     project.save()
 
 
@@ -203,16 +191,19 @@ def add_build_number(project_pbxproj_path, target_name, project_pbxproj_dir):
     build = int(build) + 1
 
     add_xcode_project_version(
-        project_pbxproj_path=project_pbxproj_path, 
-        target_name=target_name, 
+        project_pbxproj_path=project_pbxproj_path,
+        target_name=target_name,
         marketing_version=marketing_version,
         current_project_version=build)
     tools.notice_print('修改后version: %s (%s)' % (marketing_version, build))
     remove_project_pbxproj_backup_file(project_pbxproj_dir=project_pbxproj_dir)
-    return build
-    
 
-def commit_add_build_change_to_git(project_pbxproj_path, ipa_builded_num):
+    # commit_add_build_change_to_git(project_pbxproj_path=project_pbxproj_path, ipa_builded_num=build)
+
+    return build
+
+
+def commit_add_build_change_to_git(project_pbxproj_path, ipa_builded_num, github_repo_url, github_access_token):
     tools.notice_print('修改了build, 提交build commit')
     print('git status:')
     subprocess.call('git status', shell=True)
@@ -224,6 +215,12 @@ def commit_add_build_change_to_git(project_pbxproj_path, ipa_builded_num):
     print('')
     tools.success_print("已提交commit message: 'mod: build %s'" %
                         (ipa_builded_num))
+    if github_repo_url is not None and github_access_token is not None:
+        temp = github_repo_url.split('//')
+        comman_url = temp[0] + '//' + github_access_token + '@' + temp[1]
+        push_comman = 'git push ' + comman_url
+        subprocess.call(push_comman, shell=True)
+        tools.success_print("git push success")
 
 
 def end_program(type):

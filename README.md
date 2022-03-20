@@ -6,30 +6,34 @@ iOS自动打包脚本
 
 * 脚本第一次执行之前 先检查依赖, packaging目录下终端执行 
 * pip3 install -r requirements.txt
+* 建议在gitignore中天加打包后的packaging/build文件夹
 
 ## 运行
 
+* packaging.py 用于打包
+* testflight_distribution.py 用于在testflight发布包
+
 ``` shell
 cd packaging
-packaging.py -h <help> -s <scheme> -m <message> -ab <addBuildNumber> -pgy <pgy> -as <appstore> -dm <distributionMethod>
+python3 packaging.py -h <help> -s <scheme> -m <message> -ab <addBuildNumber> -pgy <pgy> -as <appstore> -dm <distributionMethod>
 ```
 
 ## 配置
 
 * configs.py 脚本的一些基本配置, 一些文件路径需要根据项目进行修改
-* config.json 打包的相关配置, 运行脚本前先配置该文件的一些参数
-* build目录是打包后的文件,建议加入到.gitignore
+* config.json 打包的相关配置
 
 ## 命令行参数
 
 ```
 packaging.py -s <scheme> -m <message> -ab <addBuildNumber> -pgy <pgy> -as <appstore>
 -h      help
--s      scheme: xcode project schemes
--m      message: app update message.
--ab     addBuildNumber: a boolean value, weather auto increase build number or not. yes will +1, no do nothing.
--pgy    pgy: a boolean value, weather upload ipa to pgy or not. 
--as    appstore: a boolean value, weather upload ipa to appstore or not.
+-s --scheme:            xcode project schemes
+-m --message:           app update message.
+-ab --addBuildNumber:   a boolean value, weather auto increase build number or not. yes will +1, no do nothing.
+-pgy --pgy:             a boolean value, weather upload ipa to pgy or not. 
+-as --appstore:         a boolean value, weather upload ipa to appstore or not.
+-dm --distributionMethod: development, app-store, ad-hoc, default is development for upload pgy, app-store for upload App Store Connect.
 ```
 
 ## 命令行交互
@@ -50,24 +54,38 @@ packaging.py -s <scheme> -m <message> -ab <addBuildNumber> -pgy <pgy> -as <appst
     "project_scheme_list": 需要打包的scheme,
     "project_scheme_index": project_scheme_list对应的index
     "apple_account_team_id": apple developer account teamID,
+
+    "development_provisioning_profiles": {
+        "bundle id": "provisioning profile uuid"
+    },  ( eg: "com.apple.app" : "b7a34da7-a028-4fbc-b441-68ef345abaa6")
+    "distribution_provisioning_profiles": {
+        "bundle id": "provisioning profile uuid"
+    },  ( eg: "com.apple.app" : "b7a34da7-a028-4fbc-b441-68ef345abaa6")
+    "distribution_method" : development, app-store, ad-hoc,
+
     "upload_pgy_enable": 是否上传pgy,
     "pgy_api_key": pgy_api_key,
     "upload_app_sotre_enable": 是否上传App Store,
-    "upload_app_store_account_type" : 上传App Store账号类型 1 使用账号/密码, 2使用apikey/apiIssuer
+    "upload_app_store_account_type" : 上传App Store账号类型 1 使用账号/密码, 2使用apikey/apiIssuer(建议)
     "apple_account_user":  apple 账号,
     "apple_account_password": apple 账号密码 ,
+    "auth_key_file_name": "AuthKey_******.p8", //  上传App Store账号类型为1时, 需要下载AuthKey.p8文件,把文件复制到此处
     "apple_account_apiKey": apple账号apiKey,
     "apple_account_apiIssuer": apple账号apiIssuer,
     "send_email_enable": 是否发送邮件,
-    "email_receivers": 邮件收件人 list,
+    "email_host": "smtp.163.com",
+    "email_port": 465,
+    "email_sender_user": "******3@163.com",
+    "email_sender_psw": "*****",
+
+    "email_receivers": ["***@gmail.com"] //邮件收件人 list,
     "add_build_number_enable": 是否增加build number,
     "log_enable": 是否导出log,
-    "provisioning_profiles": {
-                bunddleId: mobileprovisioning
-            },
-    "distribution_method" : development, app-store, ad-hoc,
+    "github_access_token" : "",
+    "github_repo_url" : ""
 
-
+## testfilght_distribution.py
+    在testflight中发布最新提交的包
 ## xcodebuild 参数
 
 ```
