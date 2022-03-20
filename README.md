@@ -12,7 +12,7 @@ iOS自动打包脚本
 
 * packaging.py 用于打包
 * testflight_distribution.py 用于在testflight发布包
-
+  
 ``` shell
 cd packaging
 python3 packaging.py -h <help> -s <scheme> -m <message> -ab <addBuildNumber> -pgy <pgy> -as <appstore> -dm <distributionMethod>
@@ -21,7 +21,7 @@ python3 packaging.py -h <help> -s <scheme> -m <message> -ab <addBuildNumber> -pg
 ## 配置
 
 * configs.py 脚本的一些基本配置, 一些文件路径需要根据项目进行修改
-* config.json 打包的相关配置
+* config.json 打包的相关配置, 请根据项目和实际需求填写
 
 ## 命令行参数
 
