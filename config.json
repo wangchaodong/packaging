@@ -10,6 +10,9 @@
     "distribution_provisioning_profiles": {
         "bundleID": "provisioning_profiles_uuid"
     },
+    "adhoc_provisioning_profiles": {
+        "bundleID": "provisioning_profiles_uuid"
+    },
     "distribution_method": "app-store",
     "upload_pgy_enable": false,
     "pgy_api_key": "***",
