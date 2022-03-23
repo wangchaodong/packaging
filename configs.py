@@ -76,6 +76,8 @@ class Config(object):
     github_access_token: str
     github_repo_url: str
 
+    testflight_external_group_name: str
+
     xcodeproj_path = None
     xcworkspace_path = None
     is_workspace_project = True
@@ -213,7 +215,7 @@ def prepare_config():
         Config.log_enable = config_json_dic['log_enable']
         Config.github_access_token = config_json_dic['github_access_token']
         Config.github_repo_url = config_json_dic['github_repo_url']
-
+        Config.testflight_external_group_name = config_json_dic['testflight_external_group_name']
     if get_xcode_workspace_path() != '':
         Config.is_workspace_project = True
     else:
@@ -263,7 +265,8 @@ def save_packaging_config():
         "add_build_number_enable": Config.add_build_number_enable,
         "log_enable": Config.log_enable,
         "github_access_token": Config.github_access_token,
-        "github_repo_url": Config.github_repo_url
+        "github_repo_url": Config.github_repo_url,
+        "testflight_external_group_name": Config.testflight_external_group_name
     }
 
     tools.warn_print('back up configs')

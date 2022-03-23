@@ -4,13 +4,13 @@
 #doc https://developer.apple.com/documentation/appstoreconnectapi
 # https://github.com/Ponytech/appstoreconnectapi
 
+import smtplib
 import os
 import platform
 import requests
 import time
 import json
 from authlib.jose import jwt
-import smtplib
 from email.mime.text import MIMEText
 import tools
 import configs as constant_configs
@@ -30,7 +30,6 @@ PRIVATE_KEY = open(os.path.join(constant_configs.auth_key_dir_name,
 is_run_in_local = True
 log_enable = True
 log_dir = 'log/'
-external_testing_name = "iKuddle-Preview"
 
 header = {
     "alg": "ES256",
@@ -90,8 +89,7 @@ def get_testflight_latest_builds():
     else:
         if is_run_in_local:
             print('latest build processingState: INVALID, wait 30 seconds to retry')
-            time.sleep(30)
-            get_testflight_latest_builds()
+            exit(1)
         else:
             print('latest build processingState: INVALID')
             exit(1)
@@ -113,8 +111,12 @@ def get_testflight_beta_group(latest_build_id):
               results['errors']['status']+' '+results['errors']['code']+' '+results['errors'][0]['detail'])
         exit(1)
 
+    if packaging_config.testflight_external_group_name is None:
+        print('testflight_external_group_name is None')
+        exit(1)
+
     for group in results['data']:
-        if group['attributes']['name'] == external_testing_name:
+        if group['attributes']['name'] == packaging_config.testflight_external_group_name:
             print('group_id:'+group['id'])
             beta_group_id = group['id']
             builds_related_url = group['relationships']['builds']['links']['related']
@@ -159,13 +161,13 @@ def add_builds_to_external_group(build_id, group_id, version):
         print('add_builds_to_external_group: success')
         submit_app_for_beta_review(build_id=build_id)
         # send email notification
-        email_subject = 'iKuddle-iOS Builds %s Distributed Successfully' % (
-            version)
+        email_subject = '%s Builds %s Distributed Successfully' % (
+            packaging_config.project_name, version)
         message = 'Testflight new build version: '+version + \
             ' has been added to external testing group.'
         email_content = """
     <head>
-    iKuddle iOS TestFlight Builds Distributed Successfully!
+    %s TestFlight Builds Distributed Successfully!
     </head>
     <p>
     message: %s <br>
@@ -173,7 +175,7 @@ def add_builds_to_external_group(build_id, group_id, version):
     platform: %s <br>
     system user: %s <br>
     </p>
-    """ % (message, platform.platform(), platform.node())
+    """ % (packaging_config.project_name, message, platform.platform(), platform.node())
 
         tools.send_email(email_host=packaging_config.email_host,
                          email_port=packaging_config.email_port,

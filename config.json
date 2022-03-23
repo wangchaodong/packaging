@@ -34,5 +34,6 @@
     "add_build_number_enable": true,
     "log_enable": true,
     "github_access_token" : "",
-    "github_repo_url" : ""
+    "github_repo_url" : "",
+    "testflight_external_group_name" : ""
 }
