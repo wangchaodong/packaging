@@ -6,12 +6,12 @@ iOS自动打包脚本
 
 * 脚本第一次执行之前 先检查依赖, packaging目录下终端执行 
 * pip3 install -r requirements.txt
-* 建议在gitignore中天加打包后的packaging/build文件夹
+* 建议在gitignore中添加打包后的packaging/build文件夹
 
 ## 运行
 
-* packaging.py 用于打包
-* testflight_distribution.py 用于在testflight发布包
+* packaging.py用于打包
+* testflight_distribution.py用于在testflight发布包
   
 ``` shell
 cd packaging
@@ -20,8 +20,7 @@ python3 packaging.py -h <help> -s <scheme> -m <message> -ab <addBuildNumber> -pg
 
 ## 配置
 
-* configs.py 脚本的一些基本配置, 一些文件路径需要根据项目进行修改
-* config.json 打包的相关配置, 请根据项目和实际需求填写
+* config.json打包的相关配置, 请根据项目和实际需求填写, 配置好后即可进行打包.
 
 ## 命令行参数
 
@@ -143,3 +142,7 @@ uploadSymbols 参数类型：Bool
 该参数在app store的导出类型下有效。用来配置导出的包是否包含符号表。默认值为YES
 
 ```
+## License
+
+This project is released under the [MIT license](https://github.com/wangchaodong/packaging/blob/main/LICENSE).
+
