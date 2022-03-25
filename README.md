@@ -5,7 +5,9 @@ iOS自动打包脚本
 ## 准备
 
 * 脚本第一次执行之前 先检查依赖, packaging目录下终端执行 
-* pip3 install -r requirements.txt
+  ```
+  pip3 install -r requirements.txt
+  ```
 * 建议在gitignore中添加打包后的packaging/build文件夹
 
 ## 运行

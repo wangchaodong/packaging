@@ -183,7 +183,7 @@ def add_builds_to_external_group(build_id, group_id, version):
                          email_psw=packaging_config.email_sender_psw,
                          email_receivers=packaging_config.email_receivers,
                          email_subject=email_subject,
-                         email_content=email_content)
+                         email_content=email_content,email_attachments=None)
 
     else:
         print('add_builds_to_external_group: failed')
